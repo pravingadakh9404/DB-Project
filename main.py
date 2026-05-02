@@ -5,7 +5,7 @@ from pydantic import BaseModel
 from sqlalchemy import create_engine, text
 
 # Hardcoded DB URL with psycopg2 adapter
-DB_URL = "postgresql+psycopg2://postgres:aXAVHLQtPXhMCC8l@db.owoajhmwxqtqjxxlkgiv.supabase.co:5432/postgres"
+DB_URL = "postgresql://neondb_owner:npg_g5PVY8qCDiLE@ep-green-smoke-ambio3mk-pooler.c-5.us-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require"
 engine = create_engine(DB_URL)
 
 app = FastAPI()
