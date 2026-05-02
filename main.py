@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import create_engine, text
 from pydantic import BaseModel
 
-DATABASE_URL = "postgresql://postgres:[YOUR-PASSWORD]@db.mykozwwwpswzukwzcvei.supabase.co:5432/postgres"
+DATABASE_URL = "postgresql://postgres:bz5nKga9MsiQe1dc@db.mykozwwwpswzukwzcvei.supabase.co:5432/postgres"
 engine = create_engine(DATABASE_URL)
 app = FastAPI()
 
