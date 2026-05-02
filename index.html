@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>SoundStage — Concert Tickets</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
+  <style>
+    :root { --accent: #f97316; --glow: #fb923c; }
+    body { font-family: 'DM Sans', sans-serif; background: #0a0a0f; color: #e5e5e5; }
+    h1, .display { font-family: 'Bebas Neue', cursive; }
+    .card { background: linear-gradient(145deg, #12121c, #1a1a2e); border: 1px solid #2a2a3a; transition: transform .3s, box-shadow .3s; }
+    .card:hover { transform: translateY(-6px); box-shadow: 0 0 32px #f9731633; }
+    .btn-main { background: var(--accent); color: #0a0a0f; font-weight: 700; transition: all .2s; }
+    .btn-main:hover { background: var(--glow); box-shadow: 0 0 18px #f9731688; }
+    .tag { background: #f9731622; color: var(--accent); border: 1px solid #f9731644; }
+    .modal-bg { background: rgba(0,0,0,0.85); backdrop-filter: blur(8px); }
+    .modal-box { background: #12121c; border: 1px solid #2a2a3a; }
+    .bar-fill { background: linear-gradient(90deg, var(--accent), #ec4899); height: 6px; border-radius: 3px; transition: width .6s ease; }
+    .bar-bg { background: #2a2a3a; height: 6px; border-radius: 3px; overflow: hidden; }
+    input, select { background: #1e1e2e; border: 1px solid #2a2a3a; color: #e5e5e5; }
+    input:focus, select:focus { border-color: var(--accent); outline: none; box-shadow: 0 0 0 2px #f9731633; }
+    .grain { position: fixed; inset: 0; pointer-events: none; opacity: .03; background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"); z-index: 999; }
+    @keyframes fadeUp { from { opacity:0; transform:translateY(20px);} to { opacity:1; transform:translateY(0);} }
+    .animate-fadeup { animation: fadeUp .5s ease both; }
+    .pulse-dot { animation: pulse 1.8s infinite; }
+    @keyframes pulse { 0%,100%{opacity:1;} 50%{opacity:.3;} }
+  </style>
+</head>
+<body class="min-h-screen">
+  <div class="grain"></div>
+
+  <!-- Header -->
+  <header class="border-b border-white/5 px-6 py-4 flex items-center justify-between sticky top-0 z-50" style="background:#0a0a0fdd;backdrop-filter:blur(12px)">
+    <div class="flex items-center gap-3">
+      <div class="w-8 h-8 rounded-full flex items-center justify-center" style="background:var(--accent)">
+        <svg width="16" height="16" fill="#0a0a0f" viewBox="0 0 24 24"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+      </div>
+      <span class="display text-2xl tracking-widest" style="color:var(--accent)">SOUNDSTAGE</span>
+    </div>
+    <button onclick="showBookings()" class="text-sm px-4 py-2 rounded-lg border border-white/10 hover:border-orange-500/50 transition-all text-gray-400 hover:text-white">My Bookings</button>
+  </header>
+
+  <!-- Hero -->
+  <section class="text-center py-20 px-4 relative overflow-hidden">
+    <div class="absolute inset-0" style="background:radial-gradient(ellipse 60% 40% at 50% 0%, #f9731611 0%, transparent 70%)"></div>
+    <div class="relative">
+      <span class="tag text-xs px-3 py-1 rounded-full inline-flex items-center gap-2 mb-4">
+        <span class="pulse-dot w-2 h-2 rounded-full" style="background:var(--accent)"></span>
+        Live Events 2025
+      </span>
+      <h1 class="display text-7xl md:text-9xl tracking-wider mb-4" style="background:linear-gradient(135deg,#fff 40%,var(--accent));-webkit-background-clip:text;-webkit-text-fill-color:transparent">CONCERTS</h1>
+      <p class="text-gray-400 text-lg max-w-md mx-auto">Book your spot at the most electrifying live music events this year.</p>
+    </div>
+  </section>
+
+  <!-- Concerts Grid -->
+  <main class="max-w-6xl mx-auto px-4 pb-24">
+    <h2 class="display text-3xl tracking-widest text-gray-300 mb-8">UPCOMING SHOWS</h2>
+    <div id="concerts-grid" class="grid md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
+  </main>
+
+  <!-- Booking Modal -->
+  <div id="modal" class="hidden fixed inset-0 modal-bg z-50 flex items-center justify-center p-4">
+    <div class="modal-box rounded-2xl p-8 w-full max-w-md animate-fadeup">
+      <div class="flex justify-between items-start mb-6">
+        <div>
+          <p class="text-xs text-gray-500 uppercase tracking-widest mb-1">Booking For</p>
+          <h3 id="modal-title" class="display text-3xl tracking-wide" style="color:var(--accent)"></h3>
+        </div>
+        <button onclick="closeModal()" class="text-gray-500 hover:text-white text-2xl leading-none">&times;</button>
+      </div>
+      <div class="space-y-4">
+        <div>
+          <label class="text-xs text-gray-400 uppercase tracking-widest block mb-1.5">Your Name</label>
+          <input id="user-name" type="text" placeholder="e.g. Arjun Sharma" class="w-full rounded-lg px-4 py-3 text-sm"/>
+        </div>
+        <div>
+          <label class="text-xs text-gray-400 uppercase tracking-widest block mb-1.5">Number of Tickets</label>
+          <input id="ticket-count" type="number" min="1" max="10" value="1" class="w-full rounded-lg px-4 py-3 text-sm"/>
+        </div>
+        <div class="border border-white/5 rounded-xl p-4 flex justify-between items-center">
+          <span class="text-gray-400 text-sm">Total Amount</span>
+          <span id="total-price" class="display text-2xl" style="color:var(--accent)">₹0</span>
+        </div>
+      </div>
+      <button onclick="submitBooking()" class="btn-main w-full mt-6 py-3.5 rounded-xl text-sm tracking-widest uppercase">Confirm Booking</button>
+      <p id="modal-msg" class="text-center text-sm mt-3 text-green-400 hidden"></p>
+    </div>
+  </div>
+
+  <!-- Bookings Modal -->
+  <div id="bookings-modal" class="hidden fixed inset-0 modal-bg z-50 flex items-center justify-center p-4">
+    <div class="modal-box rounded-2xl p-8 w-full max-w-lg max-h-[80vh] overflow-y-auto animate-fadeup">
+      <div class="flex justify-between items-center mb-6">
+        <h3 class="display text-3xl tracking-widest">ALL BOOKINGS</h3>
+        <button onclick="document.getElementById('bookings-modal').classList.add('hidden')" class="text-gray-500 hover:text-white text-2xl">&times;</button>
+      </div>
+      <div id="bookings-list" class="space-y-3"></div>
+    </div>
+  </div>
+
+  <script>
+    const API = 'http://localhost:8000';
+    let concerts = [], selected = null;
+
+    async function loadConcerts() {
+      const res = await fetch(`${API}/concerts`);
+      concerts = await res.json();
+      renderConcerts();
+    }
+
+    function renderConcerts() {
+      const grid = document.getElementById('concerts-grid');
+      grid.innerHTML = concerts.map((c, i) => {
+        const pct = Math.round((c.available_seats / c.total_seats) * 100);
+        const date = new Date(c.date);
+        const sold = c.total_seats - c.available_seats;
+        return `
+        <div class="card rounded-2xl p-6 animate-fadeup" style="animation-delay:${i*0.1}s">
+          <div class="flex justify-between items-start mb-4">
+            <span class="tag text-xs px-3 py-1 rounded-full">${c.available_seats > 0 ? '🎵 Available' : '⚡ Sold Out'}</span>
+            <span class="display text-3xl" style="color:var(--accent)">₹${Number(c.price).toLocaleString()}</span>
+          </div>
+          <h3 class="display text-xl tracking-wide text-white mb-1 leading-tight">${c.name}</h3>
+          <p class="text-gray-500 text-xs mb-5">📅 ${date.toLocaleDateString('en-IN',{day:'numeric',month:'long',year:'numeric'})} &nbsp;⏰ ${date.toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'})}</p>
+          <div class="mb-2 flex justify-between text-xs text-gray-500">
+            <span>${sold} booked</span><span>${c.available_seats} left</span>
+          </div>
+          <div class="bar-bg mb-5"><div class="bar-fill" style="width:${100-pct}%"></div></div>
+          <button onclick="openModal(${c.id})" ${c.available_seats===0?'disabled':''} class="btn-main w-full py-3 rounded-xl text-sm tracking-widest uppercase ${c.available_seats===0?'opacity-40 cursor-not-allowed':''}">
+            ${c.available_seats>0?'Book Tickets':'Sold Out'}
+          </button>
+        </div>`;
+      }).join('');
+    }
+
+    function openModal(id) {
+      selected = concerts.find(c => c.id === id);
+      document.getElementById('modal-title').textContent = selected.name;
+      document.getElementById('modal-msg').classList.add('hidden');
+      document.getElementById('ticket-count').value = 1;
+      updatePrice();
+      document.getElementById('modal').classList.remove('hidden');
+    }
+
+    function closeModal() { document.getElementById('modal').classList.add('hidden'); }
+
+    function updatePrice() {
+      const t = parseInt(document.getElementById('ticket-count').value) || 0;
+      document.getElementById('total-price').textContent = `₹${(t * selected?.price || 0).toLocaleString()}`;
+    }
+
+    document.getElementById('ticket-count').addEventListener('input', updatePrice);
+
+    async function submitBooking() {
+      const name = document.getElementById('user-name').value.trim();
+      const tickets = parseInt(document.getElementById('ticket-count').value);
+      if (!name || !tickets) return alert('Please fill in all fields.');
+      const res = await fetch(`${API}/book`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ concert_id: selected.id, user_name: name, tickets_booked: tickets })
+      });
+      const data = await res.json();
+      const msg = document.getElementById('modal-msg');
+      msg.classList.remove('hidden');
+      if (res.ok) {
+        msg.textContent = '🎉 ' + data.message;
+        msg.className = 'text-center text-sm mt-3 text-green-400';
+        await loadConcerts();
+        setTimeout(closeModal, 1800);
+      } else {
+        msg.textContent = '❌ ' + data.detail;
+        msg.className = 'text-center text-sm mt-3 text-red-400';
+      }
+    }
+
+    async function showBookings() {
+      const res = await fetch(`${API}/bookings`);
+      const data = await res.json();
+      document.getElementById('bookings-list').innerHTML = data.length ? data.map(b => `
+        <div class="card rounded-xl p-4 flex items-center gap-4">
+          <div class="w-10 h-10 rounded-full flex items-center justify-center text-lg" style="background:#f9731622">🎟</div>
+          <div class="flex-1">
+            <p class="text-white text-sm font-medium">${b.user_name}</p>
+            <p class="text-gray-500 text-xs">${b.concert_name}</p>
+          </div>
+          <span class="tag text-xs px-3 py-1 rounded-full">${b.tickets_booked} ticket${b.tickets_booked>1?'s':''}</span>
+        </div>`).join('') : '<p class="text-gray-500 text-center py-8">No bookings yet.</p>';
+      document.getElementById('bookings-modal').classList.remove('hidden');
+    }
+
+    loadConcerts();
+  </script>
+</body>
+</html>
