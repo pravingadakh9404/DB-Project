@@ -1,65 +1,25 @@
-import os
-from urllib.parse import quote_plus
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import create_engine, text
 from pydantic import BaseModel
 
-# ══════════════════════════════════════════════════════════════════
-#  DB URL  —  pg8000 (pure Python, no system libs needed on Render)
-# ══════════════════════════════════════════════════════════════════
-_pw   = quote_plus(os.environ.get("DB_PASSWORD", "aXAVHLQtPXhMCC8l"))
-_host = os.environ.get("DB_HOST", "db.owoajhmwxqtqjxxlkgiv.supabase.co")
-_user = os.environ.get("DB_USER", "postgres")
-_port = os.environ.get("DB_PORT", "5432")
-_name = os.environ.get("DB_NAME", "postgres")
+# ── HARDCODED DB (no env vars needed) ─────────────────────────────────────────
+DATABASE_URL = "postgresql+psycopg2://postgres:aXAVHLQtPXhMCC8l@db.owoajhmwxqtqjxxlkgiv.supabase.co:5432/postgres"
 
-# If full DATABASE_URL is set, use it but force pg8000 driver
-_raw = os.environ.get("DATABASE_URL", "")
-if _raw:
-    for pfx in ("postgresql+psycopg2://", "postgresql+psycopg://",
-                 "postgresql+pg8000://", "postgresql://", "postgres://"):
-        if _raw.startswith(pfx):
-            _raw = _raw[len(pfx):]
-            break
-    DATABASE_URL = f"postgresql+pg8000://{_raw}"
-else:
-    DATABASE_URL = f"postgresql+pg8000://{_user}:{_pw}@{_host}:{_port}/{_name}"
+engine = create_engine(DATABASE_URL, pool_pre_ping=True, pool_recycle=300)
 
-# ══════════════════════════════════════════════════════════════════
-#  ENGINE
-# ══════════════════════════════════════════════════════════════════
-engine = create_engine(
-    DATABASE_URL,
-    pool_pre_ping=True,
-    pool_recycle=300,
-    pool_size=3,
-    max_overflow=2,
-)
-
-# ══════════════════════════════════════════════════════════════════
-#  APP
-# ══════════════════════════════════════════════════════════════════
+# ── APP ───────────────────────────────────────────────────────────────────────
 app = FastAPI(title="SoundStage")
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
 
-# JSON-safe row serialiser (handles datetime, Decimal)
 def row_to_dict(row) -> dict:
     out = {}
     for k, v in dict(row).items():
-        if hasattr(v, "isoformat"):
-            out[k] = v.isoformat()
-        elif hasattr(v, "__float__"):
-            out[k] = float(v)
-        else:
-            out[k] = v
+        if hasattr(v, "isoformat"):   out[k] = v.isoformat()
+        elif hasattr(v, "__float__"): out[k] = float(v)
+        else:                         out[k] = v
     return out
 
 class BookingRequest(BaseModel):
@@ -67,28 +27,19 @@ class BookingRequest(BaseModel):
     user_name: str
     tickets_booked: int
 
-# ══════════════════════════════════════════════════════════════════
-#  ROUTES
-# ══════════════════════════════════════════════════════════════════
-
+# ── ROUTES ────────────────────────────────────────────────────────────────────
 @app.get("/")
 def root():
     return FileResponse("index.html")
 
-
 @app.get("/health")
 def health():
-    """Visit /health in browser to instantly diagnose DB issues."""
     try:
         with engine.connect() as c:
             c.execute(text("SELECT 1"))
-        return {"status": "ok", "db": "connected", "url_prefix": DATABASE_URL[:40]}
+        return {"status": "ok", "db": "connected"}
     except Exception as e:
-        return JSONResponse(
-            status_code=500,
-            content={"status": "error", "detail": str(e), "url_prefix": DATABASE_URL[:40]}
-        )
-
+        return JSONResponse(status_code=500, content={"status": "error", "detail": str(e)})
 
 @app.get("/concerts")
 def get_concerts():
@@ -98,7 +49,6 @@ def get_concerts():
         return [row_to_dict(r) for r in rows]
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
-
 
 @app.post("/book")
 def book_ticket(req: BookingRequest):
@@ -125,7 +75,6 @@ def book_ticket(req: BookingRequest):
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
-
 
 @app.get("/bookings")
 def get_bookings():
