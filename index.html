@@ -1,197 +1,649 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
+  <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>SoundStage — Concert Tickets</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet"/>
   <style>
-    :root { --accent: #f97316; --glow: #fb923c; }
-    body { font-family: 'DM Sans', sans-serif; background: #0a0a0f; color: #e5e5e5; }
-    h1, .display { font-family: 'Bebas Neue', cursive; }
-    .card { background: linear-gradient(145deg, #12121c, #1a1a2e); border: 1px solid #2a2a3a; transition: transform .3s, box-shadow .3s; }
-    .card:hover { transform: translateY(-6px); box-shadow: 0 0 32px #f9731633; }
-    .btn-main { background: var(--accent); color: #0a0a0f; font-weight: 700; transition: all .2s; }
-    .btn-main:hover { background: var(--glow); box-shadow: 0 0 18px #f9731688; }
-    .tag { background: #f9731622; color: var(--accent); border: 1px solid #f9731644; }
-    .modal-bg { background: rgba(0,0,0,0.85); backdrop-filter: blur(8px); }
-    .modal-box { background: #12121c; border: 1px solid #2a2a3a; }
-    .bar-fill { background: linear-gradient(90deg, var(--accent), #ec4899); height: 6px; border-radius: 3px; transition: width .6s ease; }
-    .bar-bg { background: #2a2a3a; height: 6px; border-radius: 3px; overflow: hidden; }
-    input, select { background: #1e1e2e; border: 1px solid #2a2a3a; color: #e5e5e5; }
-    input:focus, select:focus { border-color: var(--accent); outline: none; box-shadow: 0 0 0 2px #f9731633; }
-    .grain { position: fixed; inset: 0; pointer-events: none; opacity: .03; background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"); z-index: 999; }
-    @keyframes fadeUp { from { opacity:0; transform:translateY(20px);} to { opacity:1; transform:translateY(0);} }
-    .animate-fadeup { animation: fadeUp .5s ease both; }
-    .pulse-dot { animation: pulse 1.8s infinite; }
-    @keyframes pulse { 0%,100%{opacity:1;} 50%{opacity:.3;} }
+    :root {
+      --accent: #f97316;
+      --accent2: #ec4899;
+      --bg: #07070e;
+      --card: #0f0f1a;
+      --border: #1e1e30;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Outfit', sans-serif; background: var(--bg); color: #e2e2e8; overflow-x: hidden; cursor: default; }
+    .display { font-family: 'Bebas Neue', cursive; }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar { width: 4px; }
+    ::-webkit-scrollbar-track { background: var(--bg); }
+    ::-webkit-scrollbar-thumb { background: var(--accent); border-radius: 2px; }
+
+    /* Background FX */
+    .bg-mesh {
+      position: fixed; inset: 0; z-index: 0; pointer-events: none;
+      background:
+        radial-gradient(ellipse 80% 60% at 20% -10%, #f9731614 0%, transparent 60%),
+        radial-gradient(ellipse 60% 50% at 80% 110%, #ec489914 0%, transparent 60%),
+        radial-gradient(ellipse 40% 40% at 50% 50%, #7c3aed08 0%, transparent 70%);
+    }
+    .grain {
+      position: fixed; inset: 0; z-index: 1; pointer-events: none; opacity: .04;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    }
+
+    /* Glassmorphism */
+    .glass {
+      background: rgba(15,15,26,0.8);
+      backdrop-filter: blur(16px);
+      border: 1px solid var(--border);
+    }
+
+    /* Cards */
+    .concert-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      overflow: hidden;
+      transition: transform .35s cubic-bezier(.22,1,.36,1), box-shadow .35s ease, border-color .35s ease;
+      position: relative;
+    }
+    .concert-card::before {
+      content: '';
+      position: absolute; inset: 0;
+      background: linear-gradient(135deg, #f9731608, transparent 50%);
+      opacity: 0; transition: opacity .35s;
+    }
+    .concert-card:hover { transform: translateY(-8px) scale(1.01); border-color: #f9731644; box-shadow: 0 24px 60px #f9731622, 0 0 0 1px #f9731622; }
+    .concert-card:hover::before { opacity: 1; }
+
+    /* Concert Visual Banner */
+    .concert-banner {
+      height: 160px;
+      position: relative;
+      overflow: hidden;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .concert-banner .emoji-bg {
+      font-size: 5rem;
+      filter: blur(2px);
+      opacity: 0.18;
+      position: absolute;
+      transform: scale(1.5);
+    }
+    .concert-banner .emoji-main {
+      font-size: 3.5rem;
+      position: relative; z-index: 2;
+      filter: drop-shadow(0 0 20px rgba(255,255,255,0.3));
+      animation: floatEmoji 3s ease-in-out infinite;
+    }
+    @keyframes floatEmoji { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-8px)} }
+
+    /* Waveform decoration */
+    .waveform {
+      display: flex; align-items: center; gap: 3px; height: 28px;
+    }
+    .waveform span {
+      width: 3px; border-radius: 2px;
+      background: linear-gradient(180deg, var(--accent), var(--accent2));
+      animation: wave 1.2s ease-in-out infinite;
+    }
+    @keyframes wave {
+      0%,100%{height:6px;opacity:.4} 50%{height:24px;opacity:1}
+    }
+
+    /* Seat progress bar */
+    .seat-bar { height: 5px; background: #1e1e30; border-radius: 99px; overflow: hidden; }
+    .seat-fill { height: 100%; border-radius: 99px; background: linear-gradient(90deg, var(--accent), var(--accent2)); transition: width .8s cubic-bezier(.22,1,.36,1); }
+
+    /* Buttons */
+    .btn-primary {
+      background: linear-gradient(135deg, var(--accent), #fb923c);
+      color: #07070e; font-weight: 600; font-size: .875rem;
+      padding: .85rem 1.5rem; border-radius: 12px;
+      border: none; cursor: pointer; width: 100%;
+      letter-spacing: .08em; text-transform: uppercase;
+      transition: all .25s ease;
+      position: relative; overflow: hidden;
+    }
+    .btn-primary::after {
+      content: '';
+      position: absolute; inset: 0;
+      background: linear-gradient(135deg, transparent, rgba(255,255,255,.15));
+      opacity: 0; transition: opacity .2s;
+    }
+    .btn-primary:hover { box-shadow: 0 0 28px #f9731666; transform: translateY(-1px); }
+    .btn-primary:hover::after { opacity: 1; }
+    .btn-primary:disabled { opacity: .35; cursor: not-allowed; transform: none; box-shadow: none; }
+
+    .btn-ghost {
+      background: transparent; border: 1px solid var(--border);
+      color: #9ca3af; font-size: .8rem; padding: .5rem 1.1rem;
+      border-radius: 8px; cursor: pointer; transition: all .2s;
+      font-family: 'Outfit', sans-serif; letter-spacing: .05em;
+    }
+    .btn-ghost:hover { border-color: var(--accent); color: var(--accent); }
+
+    /* Modals */
+    .modal-overlay {
+      position: fixed; inset: 0; z-index: 100;
+      background: rgba(0,0,0,.85); backdrop-filter: blur(12px);
+      display: flex; align-items: center; justify-content: center; padding: 1rem;
+      opacity: 0; pointer-events: none; transition: opacity .3s ease;
+    }
+    .modal-overlay.open { opacity: 1; pointer-events: all; }
+    .modal-box {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: 24px; width: 100%; max-width: 440px;
+      transform: translateY(30px) scale(.97);
+      transition: transform .3s cubic-bezier(.22,1,.36,1);
+    }
+    .modal-overlay.open .modal-box { transform: translateY(0) scale(1); }
+
+    /* Input */
+    .inp {
+      width: 100%; background: #0a0a14; border: 1px solid var(--border);
+      color: #e2e2e8; border-radius: 10px; padding: .75rem 1rem;
+      font-family: 'Outfit', sans-serif; font-size: .9rem;
+      transition: border-color .2s, box-shadow .2s;
+    }
+    .inp:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px #f9731622; }
+    .inp::placeholder { color: #3f3f5a; }
+
+    /* Tags & Badges */
+    .badge {
+      display: inline-flex; align-items: center; gap: .4rem;
+      font-size: .7rem; font-weight: 500; padding: .3rem .75rem;
+      border-radius: 99px; letter-spacing: .06em; text-transform: uppercase;
+    }
+    .badge-orange { background: #f9731618; color: var(--accent); border: 1px solid #f9731630; }
+    .badge-green { background: #22c55e18; color: #4ade80; border: 1px solid #22c55e30; }
+    .badge-red { background: #ef444418; color: #f87171; border: 1px solid #ef444430; }
+    .badge-purple { background: #8b5cf618; color: #a78bfa; border: 1px solid #8b5cf630; }
+
+    /* Pulse */
+    .live-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--accent); animation: livePulse 1.6s infinite; display: inline-block; }
+    @keyframes livePulse { 0%,100%{opacity:1;box-shadow:0 0 0 0 #f9731666} 50%{opacity:.6;box-shadow:0 0 0 6px transparent} }
+
+    /* Animations */
+    @keyframes fadeUp { from{opacity:0;transform:translateY(24px)} to{opacity:1;transform:translateY(0)} }
+    @keyframes slideIn { from{opacity:0;transform:translateX(-16px)} to{opacity:1;transform:translateX(0)} }
+    .fade-up { animation: fadeUp .6s cubic-bezier(.22,1,.36,1) both; }
+    .slide-in { animation: slideIn .5s cubic-bezier(.22,1,.36,1) both; }
+
+    /* Hero text gradient */
+    .hero-gradient {
+      background: linear-gradient(135deg, #fff 30%, var(--accent) 60%, var(--accent2) 100%);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    }
+
+    /* Nav */
+    nav {
+      position: sticky; top: 0; z-index: 50;
+      border-bottom: 1px solid var(--border);
+      background: rgba(7,7,14,.88); backdrop-filter: blur(20px);
+    }
+
+    /* Section divider */
+    .section-label {
+      font-size: .7rem; letter-spacing: .2em; text-transform: uppercase;
+      color: var(--accent); font-weight: 600; display: flex; align-items: center; gap: .6rem;
+    }
+    .section-label::after { content: ''; flex: 1; height: 1px; background: linear-gradient(90deg, var(--border), transparent); }
+
+    /* Toast */
+    #toast {
+      position: fixed; bottom: 1.5rem; right: 1.5rem; z-index: 200;
+      padding: .9rem 1.4rem; border-radius: 14px; font-size: .875rem;
+      font-weight: 500; display: flex; align-items: center; gap: .6rem;
+      transform: translateY(80px); opacity: 0; transition: all .4s cubic-bezier(.22,1,.36,1);
+      max-width: 320px;
+    }
+    #toast.show { transform: translateY(0); opacity: 1; }
+    #toast.success { background: #14532d; border: 1px solid #22c55e44; color: #4ade80; }
+    #toast.error { background: #450a0a; border: 1px solid #ef444444; color: #f87171; }
+
+    /* Stats bar */
+    .stat-item { text-align: center; }
+    .stat-num { font-family: 'Bebas Neue', cursive; font-size: 2rem; line-height: 1; }
+
+    /* Ticket stub decoration */
+    .ticket-perforation {
+      border-top: 2px dashed var(--border);
+      position: relative;
+    }
+    .ticket-perforation::before, .ticket-perforation::after {
+      content: ''; position: absolute; top: -8px;
+      width: 14px; height: 14px; border-radius: 50%;
+      background: var(--bg); border: 1px solid var(--border);
+    }
+    .ticket-perforation::before { left: -7px; }
+    .ticket-perforation::after { right: -7px; }
+
+    /* Booking row */
+    .booking-row {
+      background: #0a0a14; border: 1px solid var(--border);
+      border-radius: 14px; padding: 1rem 1.2rem;
+      display: flex; align-items: center; gap: 1rem;
+      transition: border-color .2s;
+    }
+    .booking-row:hover { border-color: #f9731630; }
+
+    /* Genre tag colors */
+    .genre-pop { background: #ec489918; color: #f472b6; border: 1px solid #ec489930; }
+    .genre-rock { background: #ef444418; color: #f87171; border: 1px solid #ef444430; }
+    .genre-edm { background: #06b6d418; color: #67e8f9; border: 1px solid #06b6d430; }
+    .genre-classical { background: #8b5cf618; color: #a78bfa; border: 1px solid #8b5cf630; }
+    .genre-jazz { background: #f59e0b18; color: #fcd34d; border: 1px solid #f59e0b30; }
+    .genre-indie { background: #22c55e18; color: #4ade80; border: 1px solid #22c55e30; }
+
+    /* Scrollable modal */
+    .modal-scroll { max-height: 70vh; overflow-y: auto; }
+    .modal-scroll::-webkit-scrollbar { width: 3px; }
+    .modal-scroll::-webkit-scrollbar-thumb { background: var(--accent); }
   </style>
 </head>
-<body class="min-h-screen">
+<body>
+  <div class="bg-mesh"></div>
   <div class="grain"></div>
 
-  <!-- Header -->
-  <header class="border-b border-white/5 px-6 py-4 flex items-center justify-between sticky top-0 z-50" style="background:#0a0a0fdd;backdrop-filter:blur(12px)">
-    <div class="flex items-center gap-3">
-      <div class="w-8 h-8 rounded-full flex items-center justify-center" style="background:var(--accent)">
-        <svg width="16" height="16" fill="#0a0a0f" viewBox="0 0 24 24"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+  <!-- NAV -->
+  <nav>
+    <div class="max-w-7xl mx-auto px-5 py-4 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <div class="w-9 h-9 rounded-xl flex items-center justify-center" style="background:linear-gradient(135deg,var(--accent),#fb923c)">
+          <svg width="18" height="18" fill="#07070e" viewBox="0 0 24 24"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+        </div>
+        <span class="display text-2xl tracking-widest" style="color:var(--accent)">SOUNDSTAGE</span>
+        <span class="badge badge-orange hidden sm:inline-flex"><span class="live-dot"></span>Live Booking</span>
       </div>
-      <span class="display text-2xl tracking-widest" style="color:var(--accent)">SOUNDSTAGE</span>
+      <div class="flex items-center gap-2">
+        <button class="btn-ghost" onclick="openBookingsModal()">🎟 My Bookings</button>
+      </div>
     </div>
-    <button onclick="showBookings()" class="text-sm px-4 py-2 rounded-lg border border-white/10 hover:border-orange-500/50 transition-all text-gray-400 hover:text-white">My Bookings</button>
-  </header>
+  </nav>
 
-  <!-- Hero -->
-  <section class="text-center py-20 px-4 relative overflow-hidden">
-    <div class="absolute inset-0" style="background:radial-gradient(ellipse 60% 40% at 50% 0%, #f9731611 0%, transparent 70%)"></div>
-    <div class="relative">
-      <span class="tag text-xs px-3 py-1 rounded-full inline-flex items-center gap-2 mb-4">
-        <span class="pulse-dot w-2 h-2 rounded-full" style="background:var(--accent)"></span>
-        Live Events 2025
-      </span>
-      <h1 class="display text-7xl md:text-9xl tracking-wider mb-4" style="background:linear-gradient(135deg,#fff 40%,var(--accent));-webkit-background-clip:text;-webkit-text-fill-color:transparent">CONCERTS</h1>
-      <p class="text-gray-400 text-lg max-w-md mx-auto">Book your spot at the most electrifying live music events this year.</p>
+  <!-- HERO -->
+  <section class="relative text-center py-20 px-4 overflow-hidden" style="z-index:2">
+    <div class="max-w-4xl mx-auto">
+      <div class="fade-up" style="animation-delay:.1s">
+        <span class="badge badge-orange mb-5 inline-flex"><span class="live-dot"></span>Live Events 2025</span>
+      </div>
+      <h1 class="display hero-gradient fade-up" style="font-size:clamp(5rem,14vw,11rem);line-height:.9;letter-spacing:.02em;animation-delay:.2s">
+        CONCERTS
+      </h1>
+      <p class="text-gray-400 mt-5 text-lg max-w-lg mx-auto fade-up" style="animation-delay:.35s">
+        Handpicked live music experiences — from indie gigs to stadium spectacles. Your next favourite night starts here.
+      </p>
+      <!-- Waveform decoration -->
+      <div class="flex justify-center mt-8 fade-up" style="animation-delay:.45s">
+        <div class="waveform">
+          <span style="animation-delay:0s"></span><span style="animation-delay:.1s"></span>
+          <span style="animation-delay:.2s"></span><span style="animation-delay:.3s"></span>
+          <span style="animation-delay:.4s"></span><span style="animation-delay:.5s"></span>
+          <span style="animation-delay:.6s"></span><span style="animation-delay:.7s"></span>
+          <span style="animation-delay:.8s"></span><span style="animation-delay:.9s"></span>
+          <span style="animation-delay:1s"></span><span style="animation-delay:1.1s"></span>
+        </div>
+      </div>
     </div>
   </section>
 
-  <!-- Concerts Grid -->
-  <main class="max-w-6xl mx-auto px-4 pb-24">
-    <h2 class="display text-3xl tracking-widest text-gray-300 mb-8">UPCOMING SHOWS</h2>
-    <div id="concerts-grid" class="grid md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
+  <!-- STATS BAR -->
+  <div class="max-w-7xl mx-auto px-5 mb-12 relative" style="z-index:2">
+    <div class="glass rounded-2xl p-6 grid grid-cols-3 gap-4 fade-up" style="animation-delay:.5s">
+      <div class="stat-item">
+        <div class="stat-num" style="color:var(--accent)" id="stat-concerts">—</div>
+        <div class="text-xs text-gray-500 uppercase tracking-widest mt-1">Shows</div>
+      </div>
+      <div class="stat-item border-x border-white/5">
+        <div class="stat-num" style="color:var(--accent2)" id="stat-seats">—</div>
+        <div class="text-xs text-gray-500 uppercase tracking-widest mt-1">Seats Left</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-num text-green-400" id="stat-bookings">—</div>
+        <div class="text-xs text-gray-500 uppercase tracking-widest mt-1">Booked</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CONCERTS GRID -->
+  <main class="max-w-7xl mx-auto px-5 pb-24 relative" style="z-index:2">
+    <div class="section-label mb-8 fade-up" style="animation-delay:.6s">Upcoming Shows</div>
+    <div id="concerts-grid" class="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
+      <!-- skeleton -->
+      <div class="concert-card p-6 opacity-40 animate-pulse">
+        <div style="height:160px;background:#1e1e30;border-radius:12px;margin-bottom:1rem"></div>
+        <div style="height:12px;background:#1e1e30;border-radius:6px;width:60%;margin-bottom:.8rem"></div>
+        <div style="height:20px;background:#1e1e30;border-radius:6px;margin-bottom:.5rem"></div>
+        <div style="height:12px;background:#1e1e30;border-radius:6px;width:40%"></div>
+      </div>
+      <div class="concert-card p-6 opacity-30 animate-pulse">
+        <div style="height:160px;background:#1e1e30;border-radius:12px;margin-bottom:1rem"></div>
+        <div style="height:12px;background:#1e1e30;border-radius:6px;width:70%;margin-bottom:.8rem"></div>
+        <div style="height:20px;background:#1e1e30;border-radius:6px;margin-bottom:.5rem"></div>
+        <div style="height:12px;background:#1e1e30;border-radius:6px;width:50%"></div>
+      </div>
+      <div class="concert-card p-6 opacity-20 animate-pulse">
+        <div style="height:160px;background:#1e1e30;border-radius:12px;margin-bottom:1rem"></div>
+        <div style="height:12px;background:#1e1e30;border-radius:6px;width:55%;margin-bottom:.8rem"></div>
+        <div style="height:20px;background:#1e1e30;border-radius:6px;margin-bottom:.5rem"></div>
+        <div style="height:12px;background:#1e1e30;border-radius:6px;width:45%"></div>
+      </div>
+    </div>
+    <p id="error-msg" class="hidden text-center text-red-400 mt-10 text-sm"></p>
   </main>
 
-  <!-- Booking Modal -->
-  <div id="modal" class="hidden fixed inset-0 modal-bg z-50 flex items-center justify-center p-4">
-    <div class="modal-box rounded-2xl p-8 w-full max-w-md animate-fadeup">
-      <div class="flex justify-between items-start mb-6">
-        <div>
-          <p class="text-xs text-gray-500 uppercase tracking-widest mb-1">Booking For</p>
-          <h3 id="modal-title" class="display text-3xl tracking-wide" style="color:var(--accent)"></h3>
+  <!-- BOOKING MODAL -->
+  <div id="booking-modal" class="modal-overlay" onclick="if(event.target===this)closeBookingModal()">
+    <div class="modal-box">
+      <!-- Header -->
+      <div class="p-6 pb-4">
+        <div class="flex justify-between items-start">
+          <div>
+            <p class="text-xs text-gray-500 uppercase tracking-widest mb-1">Reserve Tickets</p>
+            <h3 id="bm-title" class="display text-3xl tracking-wide" style="color:var(--accent);line-height:1.1"></h3>
+          </div>
+          <button onclick="closeBookingModal()" style="color:#4b5563;font-size:1.5rem;line-height:1;background:none;border:none;cursor:pointer;padding:.2rem">&times;</button>
         </div>
-        <button onclick="closeModal()" class="text-gray-500 hover:text-white text-2xl leading-none">&times;</button>
+        <div id="bm-meta" class="flex items-center gap-3 mt-3 flex-wrap"></div>
       </div>
-      <div class="space-y-4">
+
+      <!-- Ticket perforation -->
+      <div class="ticket-perforation mx-6"></div>
+
+      <!-- Form -->
+      <div class="p-6 space-y-4">
         <div>
-          <label class="text-xs text-gray-400 uppercase tracking-widest block mb-1.5">Your Name</label>
-          <input id="user-name" type="text" placeholder="e.g. Arjun Sharma" class="w-full rounded-lg px-4 py-3 text-sm"/>
+          <label class="text-xs text-gray-400 uppercase tracking-widest block mb-2">Your Name</label>
+          <input id="bm-name" class="inp" type="text" placeholder="Enter your full name"/>
         </div>
         <div>
-          <label class="text-xs text-gray-400 uppercase tracking-widest block mb-1.5">Number of Tickets</label>
-          <input id="ticket-count" type="number" min="1" max="10" value="1" class="w-full rounded-lg px-4 py-3 text-sm"/>
+          <label class="text-xs text-gray-400 uppercase tracking-widest block mb-2">Tickets</label>
+          <div class="flex items-center gap-3">
+            <button onclick="adjustTickets(-1)" style="width:40px;height:40px;border-radius:8px;border:1px solid var(--border);background:#0a0a14;color:#e2e2e8;font-size:1.2rem;cursor:pointer;transition:border-color .2s" onmouseover="this.style.borderColor='var(--accent)'" onmouseout="this.style.borderColor='var(--border)'">−</button>
+            <input id="bm-tickets" class="inp text-center" type="number" min="1" max="10" value="1" style="max-width:80px"/>
+            <button onclick="adjustTickets(1)" style="width:40px;height:40px;border-radius:8px;border:1px solid var(--border);background:#0a0a14;color:#e2e2e8;font-size:1.2rem;cursor:pointer;transition:border-color .2s" onmouseover="this.style.borderColor='var(--accent)'" onmouseout="this.style.borderColor='var(--border)'">+</button>
+            <span class="text-xs text-gray-500">max 10</span>
+          </div>
         </div>
-        <div class="border border-white/5 rounded-xl p-4 flex justify-between items-center">
-          <span class="text-gray-400 text-sm">Total Amount</span>
-          <span id="total-price" class="display text-2xl" style="color:var(--accent)">₹0</span>
+        <!-- Price breakdown -->
+        <div style="background:#0a0a14;border:1px solid var(--border);border-radius:12px;padding:1rem">
+          <div class="flex justify-between text-sm text-gray-400 mb-2">
+            <span>Price per ticket</span>
+            <span id="bm-unit-price">₹0</span>
+          </div>
+          <div class="flex justify-between text-sm text-gray-400 mb-3">
+            <span>Tickets</span>
+            <span id="bm-qty-display">× 1</span>
+          </div>
+          <div style="border-top:1px solid var(--border);padding-top:.75rem" class="flex justify-between items-center">
+            <span class="text-sm font-medium">Total</span>
+            <span id="bm-total" class="display text-2xl" style="color:var(--accent)">₹0</span>
+          </div>
         </div>
+        <button class="btn-primary" onclick="submitBooking()" id="bm-submit-btn">Confirm Booking</button>
       </div>
-      <button onclick="submitBooking()" class="btn-main w-full mt-6 py-3.5 rounded-xl text-sm tracking-widest uppercase">Confirm Booking</button>
-      <p id="modal-msg" class="text-center text-sm mt-3 text-green-400 hidden"></p>
     </div>
   </div>
 
-  <!-- Bookings Modal -->
-  <div id="bookings-modal" class="hidden fixed inset-0 modal-bg z-50 flex items-center justify-center p-4">
-    <div class="modal-box rounded-2xl p-8 w-full max-w-lg max-h-[80vh] overflow-y-auto animate-fadeup">
-      <div class="flex justify-between items-center mb-6">
-        <h3 class="display text-3xl tracking-widest">ALL BOOKINGS</h3>
-        <button onclick="document.getElementById('bookings-modal').classList.add('hidden')" class="text-gray-500 hover:text-white text-2xl">&times;</button>
+  <!-- BOOKINGS MODAL -->
+  <div id="bookings-modal" class="modal-overlay" onclick="if(event.target===this)closeBookingsModal()">
+    <div class="modal-box" style="max-width:520px">
+      <div class="p-6 pb-4 flex justify-between items-center">
+        <div>
+          <p class="text-xs text-gray-500 uppercase tracking-widest mb-1">History</p>
+          <h3 class="display text-3xl tracking-widest">ALL BOOKINGS</h3>
+        </div>
+        <button onclick="closeBookingsModal()" style="color:#4b5563;font-size:1.5rem;line-height:1;background:none;border:none;cursor:pointer">&times;</button>
       </div>
-      <div id="bookings-list" class="space-y-3"></div>
+      <div class="ticket-perforation mx-6"></div>
+      <div id="bookings-list" class="p-6 space-y-3 modal-scroll"></div>
     </div>
   </div>
+
+  <!-- TOAST -->
+  <div id="toast"></div>
 
   <script>
-    const API = 'https://db-project-zb9m.onrender.com';
-    let concerts = [], selected = null;
+    // ─── CONFIG ──────────────────────────────────────────────
+    // Uses relative URLs — works on Render automatically
+    const API = '';
 
+    // ─── State ───────────────────────────────────────────────
+    let concerts = [];
+    let selectedConcert = null;
+
+    // Concert metadata (emojis, genres, venues)
+    const concertMeta = [
+      { emoji: '🎸', genre: 'Rock', genreClass: 'genre-rock', venue: 'DY Patil Stadium, Mumbai', color: '#ef4444' },
+      { emoji: '🎹', genre: 'Classical', genreClass: 'genre-classical', venue: 'NCPA, Mumbai', color: '#8b5cf6' },
+      { emoji: '🎤', genre: 'Pop', genreClass: 'genre-pop', venue: 'Jawaharlal Nehru Stadium, Delhi', color: '#ec4899' },
+      { emoji: '🎧', genre: 'EDM', genreClass: 'genre-edm', venue: 'Mahalaxmi Race Course, Mumbai', color: '#06b6d4' },
+      { emoji: '🎺', genre: 'Jazz', genreClass: 'genre-jazz', venue: 'Siri Fort Auditorium, Delhi', color: '#f59e0b' },
+      { emoji: '🎵', genre: 'Indie', genreClass: 'genre-indie', venue: 'Hard Rock Cafe, Bangalore', color: '#22c55e' },
+    ];
+
+    function getMeta(index) {
+      return concertMeta[index % concertMeta.length];
+    }
+
+    // ─── LOAD CONCERTS ────────────────────────────────────────
     async function loadConcerts() {
-      const res = await fetch(`${API}/concerts`);
-      concerts = await res.json();
-      renderConcerts();
+      try {
+        const res = await fetch(`${API}/concerts`);
+        if (!res.ok) throw new Error('API error ' + res.status);
+        concerts = await res.json();
+        renderConcerts();
+        updateStats();
+      } catch (e) {
+        document.getElementById('concerts-grid').innerHTML = '';
+        const err = document.getElementById('error-msg');
+        err.textContent = '⚠️ Could not connect to the server. Make sure the backend is running.';
+        err.classList.remove('hidden');
+      }
     }
 
     function renderConcerts() {
       const grid = document.getElementById('concerts-grid');
+      if (!concerts.length) {
+        grid.innerHTML = '<p class="col-span-3 text-center text-gray-500 py-16">No concerts found. Add some via the database!</p>';
+        return;
+      }
       grid.innerHTML = concerts.map((c, i) => {
-        const pct = Math.round((c.available_seats / c.total_seats) * 100);
+        const meta = getMeta(i);
+        const soldPct = Math.round(((c.total_seats - c.available_seats) / c.total_seats) * 100);
         const date = new Date(c.date);
-        const sold = c.total_seats - c.available_seats;
+        const dateStr = date.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
+        const timeStr = date.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
+        const isSoldOut = c.available_seats === 0;
+        const isLow = c.available_seats > 0 && c.available_seats <= Math.ceil(c.total_seats * 0.15);
+
         return `
-        <div class="card rounded-2xl p-6 animate-fadeup" style="animation-delay:${i*0.1}s">
-          <div class="flex justify-between items-start mb-4">
-            <span class="tag text-xs px-3 py-1 rounded-full">${c.available_seats > 0 ? '🎵 Available' : '⚡ Sold Out'}</span>
-            <span class="display text-3xl" style="color:var(--accent)">₹${Number(c.price).toLocaleString()}</span>
+        <div class="concert-card fade-up" style="animation-delay:${i * 0.08}s">
+          <!-- Banner -->
+          <div class="concert-banner" style="background:linear-gradient(135deg, ${meta.color}18, ${meta.color}08)">
+            <span class="emoji-bg">${meta.emoji}</span>
+            <span class="emoji-main">${meta.emoji}</span>
+            ${!isSoldOut ? `<div style="position:absolute;top:12px;left:12px">
+              <span class="badge ${meta.genreClass}">${meta.genre}</span>
+            </div>` : ''}
+            ${isSoldOut ? `<div style="position:absolute;inset:0;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center">
+              <span style="font-family:'Bebas Neue',cursive;font-size:2.5rem;color:#ef4444;letter-spacing:.1em;transform:rotate(-12deg);text-shadow:0 0 20px #ef444488">SOLD OUT</span>
+            </div>` : ''}
+            ${isLow ? `<div style="position:absolute;top:12px;right:12px">
+              <span class="badge badge-red">⚡ Few Left</span>
+            </div>` : ''}
           </div>
-          <h3 class="display text-xl tracking-wide text-white mb-1 leading-tight">${c.name}</h3>
-          <p class="text-gray-500 text-xs mb-5">📅 ${date.toLocaleDateString('en-IN',{day:'numeric',month:'long',year:'numeric'})} &nbsp;⏰ ${date.toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'})}</p>
-          <div class="mb-2 flex justify-between text-xs text-gray-500">
-            <span>${sold} booked</span><span>${c.available_seats} left</span>
+
+          <!-- Content -->
+          <div class="p-5">
+            <div class="flex justify-between items-start mb-1">
+              <h3 class="display tracking-wide text-white" style="font-size:1.35rem;line-height:1.2;flex:1;padding-right:.5rem">${c.name}</h3>
+              <span class="display text-xl whitespace-nowrap" style="color:var(--accent)">₹${Number(c.price).toLocaleString('en-IN')}</span>
+            </div>
+
+            <p style="font-size:.75rem;color:#6b7280;margin-bottom:.25rem">📍 ${meta.venue}</p>
+            <p style="font-size:.78rem;color:#9ca3af;margin-bottom:1.1rem">📅 ${dateStr} &nbsp; ⏰ ${timeStr}</p>
+
+            <!-- Seats bar -->
+            <div class="flex justify-between text-xs mb-1.5" style="color:#6b7280">
+              <span>${c.total_seats - c.available_seats} booked</span>
+              <span>${c.available_seats.toLocaleString()} seats left</span>
+            </div>
+            <div class="seat-bar mb-4">
+              <div class="seat-fill" style="width:${soldPct}%"></div>
+            </div>
+
+            <button
+              onclick="openBookingModal(${c.id})"
+              ${isSoldOut ? 'disabled' : ''}
+              class="btn-primary"
+              style="${isSoldOut ? 'opacity:.35;cursor:not-allowed;transform:none;box-shadow:none' : ''}"
+            >${isSoldOut ? '🚫 Sold Out' : '🎟 Book Tickets'}</button>
           </div>
-          <div class="bar-bg mb-5"><div class="bar-fill" style="width:${100-pct}%"></div></div>
-          <button onclick="openModal(${c.id})" ${c.available_seats===0?'disabled':''} class="btn-main w-full py-3 rounded-xl text-sm tracking-widest uppercase ${c.available_seats===0?'opacity-40 cursor-not-allowed':''}">
-            ${c.available_seats>0?'Book Tickets':'Sold Out'}
-          </button>
         </div>`;
       }).join('');
     }
 
-    function openModal(id) {
-      selected = concerts.find(c => c.id === id);
-      document.getElementById('modal-title').textContent = selected.name;
-      document.getElementById('modal-msg').classList.add('hidden');
-      document.getElementById('ticket-count').value = 1;
-      updatePrice();
-      document.getElementById('modal').classList.remove('hidden');
+    async function updateStats() {
+      const totalSeats = concerts.reduce((a, c) => a + c.available_seats, 0);
+      document.getElementById('stat-concerts').textContent = concerts.length;
+      document.getElementById('stat-seats').textContent = totalSeats.toLocaleString('en-IN');
+      try {
+        const res = await fetch(`${API}/bookings`);
+        const b = await res.json();
+        const totalBooked = b.reduce((a, bk) => a + bk.tickets_booked, 0);
+        document.getElementById('stat-bookings').textContent = totalBooked;
+      } catch { document.getElementById('stat-bookings').textContent = '—'; }
     }
 
-    function closeModal() { document.getElementById('modal').classList.add('hidden'); }
+    // ─── BOOKING MODAL ────────────────────────────────────────
+    function openBookingModal(id) {
+      selectedConcert = concerts.find(c => c.id === id);
+      if (!selectedConcert) return;
+      const meta = getMeta(concerts.indexOf(selectedConcert));
+      const date = new Date(selectedConcert.date);
 
-    function updatePrice() {
-      const t = parseInt(document.getElementById('ticket-count').value) || 0;
-      document.getElementById('total-price').textContent = `₹${(t * selected?.price || 0).toLocaleString()}`;
+      document.getElementById('bm-title').textContent = selectedConcert.name;
+      document.getElementById('bm-meta').innerHTML = `
+        <span class="badge ${meta.genreClass}">${meta.genre}</span>
+        <span class="badge badge-orange">📅 ${date.toLocaleDateString('en-IN',{day:'numeric',month:'short'})}</span>
+        <span class="badge" style="background:#1e1e30;color:#9ca3af;border:1px solid var(--border)">💺 ${selectedConcert.available_seats} left</span>
+      `;
+      document.getElementById('bm-name').value = '';
+      document.getElementById('bm-tickets').value = 1;
+      updatePriceDisplay();
+
+      document.getElementById('booking-modal').classList.add('open');
     }
 
-    document.getElementById('ticket-count').addEventListener('input', updatePrice);
+    function closeBookingModal() {
+      document.getElementById('booking-modal').classList.remove('open');
+    }
+
+    function adjustTickets(delta) {
+      const inp = document.getElementById('bm-tickets');
+      const val = Math.min(10, Math.max(1, (parseInt(inp.value) || 1) + delta));
+      inp.value = val;
+      updatePriceDisplay();
+    }
+
+    document.getElementById('bm-tickets').addEventListener('input', updatePriceDisplay);
+
+    function updatePriceDisplay() {
+      if (!selectedConcert) return;
+      const qty = parseInt(document.getElementById('bm-tickets').value) || 1;
+      const price = Number(selectedConcert.price);
+      document.getElementById('bm-unit-price').textContent = '₹' + price.toLocaleString('en-IN');
+      document.getElementById('bm-qty-display').textContent = '× ' + qty;
+      document.getElementById('bm-total').textContent = '₹' + (price * qty).toLocaleString('en-IN');
+    }
 
     async function submitBooking() {
-      const name = document.getElementById('user-name').value.trim();
-      const tickets = parseInt(document.getElementById('ticket-count').value);
-      if (!name || !tickets) return alert('Please fill in all fields.');
-      const res = await fetch(`${API}/book`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ concert_id: selected.id, user_name: name, tickets_booked: tickets })
-      });
-      const data = await res.json();
-      const msg = document.getElementById('modal-msg');
-      msg.classList.remove('hidden');
-      if (res.ok) {
-        msg.textContent = '🎉 ' + data.message;
-        msg.className = 'text-center text-sm mt-3 text-green-400';
-        await loadConcerts();
-        setTimeout(closeModal, 1800);
-      } else {
-        msg.textContent = '❌ ' + data.detail;
-        msg.className = 'text-center text-sm mt-3 text-red-400';
+      const name = document.getElementById('bm-name').value.trim();
+      const tickets = parseInt(document.getElementById('bm-tickets').value);
+      if (!name) { showToast('Please enter your name', 'error'); return; }
+      if (!tickets || tickets < 1) { showToast('Enter a valid ticket count', 'error'); return; }
+
+      const btn = document.getElementById('bm-submit-btn');
+      btn.disabled = true;
+      btn.textContent = 'Processing...';
+
+      try {
+        const res = await fetch(`${API}/book`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ concert_id: selectedConcert.id, user_name: name, tickets_booked: tickets })
+        });
+        const data = await res.json();
+        if (res.ok) {
+          showToast('🎉 Booking confirmed! Enjoy the show!', 'success');
+          closeBookingModal();
+          await loadConcerts();
+        } else {
+          showToast('❌ ' + data.detail, 'error');
+        }
+      } catch {
+        showToast('❌ Network error. Please try again.', 'error');
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Confirm Booking';
       }
     }
 
-    async function showBookings() {
-      const res = await fetch(`${API}/bookings`);
-      const data = await res.json();
-      document.getElementById('bookings-list').innerHTML = data.length ? data.map(b => `
-        <div class="card rounded-xl p-4 flex items-center gap-4">
-          <div class="w-10 h-10 rounded-full flex items-center justify-center text-lg" style="background:#f9731622">🎟</div>
-          <div class="flex-1">
-            <p class="text-white text-sm font-medium">${b.user_name}</p>
-            <p class="text-gray-500 text-xs">${b.concert_name}</p>
+    // ─── BOOKINGS MODAL ───────────────────────────────────────
+    async function openBookingsModal() {
+      document.getElementById('bookings-modal').classList.add('open');
+      const list = document.getElementById('bookings-list');
+      list.innerHTML = '<p class="text-gray-500 text-center text-sm py-4">Loading...</p>';
+
+      try {
+        const res = await fetch(`${API}/bookings`);
+        const data = await res.json();
+        if (!data.length) {
+          list.innerHTML = '<p class="text-gray-500 text-center py-10 text-sm">No bookings yet. Be the first! 🎸</p>';
+          return;
+        }
+        const totalTickets = data.reduce((a, b) => a + b.tickets_booked, 0);
+        list.innerHTML = `
+          <div class="flex justify-between text-xs text-gray-500 mb-4 px-1">
+            <span>${data.length} booking${data.length > 1 ? 's' : ''}</span>
+            <span>${totalTickets} total ticket${totalTickets > 1 ? 's' : ''}</span>
           </div>
-          <span class="tag text-xs px-3 py-1 rounded-full">${b.tickets_booked} ticket${b.tickets_booked>1?'s':''}</span>
-        </div>`).join('') : '<p class="text-gray-500 text-center py-8">No bookings yet.</p>';
-      document.getElementById('bookings-modal').classList.remove('hidden');
+          ${data.map(b => `
+          <div class="booking-row slide-in">
+            <div style="width:40px;height:40px;border-radius:10px;background:#f9731618;display:flex;align-items:center;justify-content:center;font-size:1.2rem;flex-shrink:0">🎟</div>
+            <div style="flex:1;min-width:0">
+              <p style="font-weight:500;font-size:.9rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${b.user_name}</p>
+              <p style="font-size:.75rem;color:#6b7280;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${b.concert_name}</p>
+            </div>
+            <span class="badge badge-orange">${b.tickets_booked} ticket${b.tickets_booked > 1 ? 's' : ''}</span>
+          </div>`).join('')}`;
+      } catch {
+        list.innerHTML = '<p class="text-red-400 text-center text-sm py-4">Failed to load bookings.</p>';
+      }
     }
 
+    function closeBookingsModal() {
+      document.getElementById('bookings-modal').classList.remove('open');
+    }
+
+    // ─── TOAST ────────────────────────────────────────────────
+    let toastTimer;
+    function showToast(msg, type = 'success') {
+      const t = document.getElementById('toast');
+      t.textContent = msg;
+      t.className = `show ${type}`;
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => { t.classList.remove('show'); }, 3500);
+    }
+
+    // ─── INIT ─────────────────────────────────────────────────
     loadConcerts();
   </script>
 </body>
