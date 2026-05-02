@@ -1,4 +1,5 @@
 from fastapi import FastAPI, HTTPException
+from fastapi.responses import FileResponse
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import create_engine, text
 from pydantic import BaseModel
@@ -13,6 +14,10 @@ class BookingRequest(BaseModel):
     concert_id: int
     user_name: str
     tickets_booked: int
+
+@app.get("/")
+def root():
+    return FileResponse("index.html")
 
 @app.get("/concerts")
 def get_concerts():
